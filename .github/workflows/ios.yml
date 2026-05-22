@@ -25,22 +25,18 @@ jobs:
       - name: Capacitor sync iOS
         run: npx cap sync ios
 
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: ios/App/Pods
-          key: pods-${{ hashFiles('ios/App/Podfile.lock') }}
-          restore-keys: pods-
-
-      - name: Install pods
+      - name: Resolve SPM dependencies
         working-directory: ios/App
-        run: pod install --repo-update
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project App.xcodeproj \
+            -scheme App
 
       - name: Build archive (unsigned)
         working-directory: ios/App
         run: |
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
