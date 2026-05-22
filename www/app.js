@@ -1,19 +1,12 @@
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); tg.enableClosingConfirmation?.(); }
-const initData = tg?.initData || "";
-
-// ===== Détection du contexte =====
+// ===== Stubs sans Telegram (compat avec le reste du code) =====
+const tg = null;
+const initData = "";
 const isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform?.());
-const isTelegram = !!tg && !!initData;
+const isTelegram = false;
 
-// URL fixe ngrok hardcodée dans l'app — plus besoin d'écran de setup
+// URL fixe ngrok hardcodée — plus de setup utilisateur
 const HARDCODED_API_BASE = "https://mango-gossip-starlet.ngrok-free.dev";
-
-// Base URL du serveur
-let API_BASE = "";
-if (isCapacitor || !isTelegram) {
-  API_BASE = localStorage.getItem("server_url") || HARDCODED_API_BASE;
-}
+let API_BASE = localStorage.getItem("server_url") || HARDCODED_API_BASE;
 
 function setApiBase(url) {
   url = (url || "").replace(/\/+$/, "");
@@ -516,7 +509,7 @@ async function loadDiscover({ silent = false } = {}) {
     refreshHealth();
   } catch (e) {
     if (!silent) {
-      container.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">⚠️</div>Erreur: ${escapeHtml(e.message)}<br><small>Ouvre cette page depuis Telegram.</small></div>`;
+      container.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">📡</div>Bot hors-ligne<br><small>Vérifie que DealsBot.exe tourne sur ton PC.<br>${escapeHtml(e.message)}</small></div>`;
     }
   }
 }
