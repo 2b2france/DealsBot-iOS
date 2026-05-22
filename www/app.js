@@ -6,16 +6,76 @@ const initData = tg?.initData || "";
 const isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform?.());
 const isTelegram = !!tg && !!initData;
 
-// Base URL du serveur (en mode standalone, lue depuis localStorage)
+// URL fixe ngrok hardcodée dans l'app — plus besoin d'écran de setup
+const HARDCODED_API_BASE = "https://mango-gossip-starlet.ngrok-free.dev";
+
+// Base URL du serveur
 let API_BASE = "";
 if (isCapacitor || !isTelegram) {
-  API_BASE = localStorage.getItem("server_url") || "";
+  API_BASE = localStorage.getItem("server_url") || HARDCODED_API_BASE;
 }
 
 function setApiBase(url) {
   url = (url || "").replace(/\/+$/, "");
   API_BASE = url;
   localStorage.setItem("server_url", url);
+}
+
+// ===== Notifications locales + son =====
+let _notifPermissionRequested = false;
+let _alertSound = null;
+
+function getAlertSound() {
+  if (_alertSound) return _alertSound;
+  // Son court généré: bip simple via Web Audio
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    _alertSound = new AC();
+    return _alertSound;
+  } catch { return null; }
+}
+
+function playAlertSound() {
+  const ctx = getAlertSound();
+  if (!ctx) return;
+  try {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    o.start();
+    o.stop(ctx.currentTime + 0.2);
+  } catch { /* ignore */ }
+}
+
+async function notifyNewDeals(fresh) {
+  if (!fresh || !fresh.length) return;
+  // Vibration (iOS Capacitor + navigateur)
+  try { navigator.vibrate?.([50, 30, 80]); } catch {}
+  // Son
+  playAlertSound();
+  // Notification native si on a la permission
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default" && !_notifPermissionRequested) {
+    _notifPermissionRequested = true;
+    try { await Notification.requestPermission(); } catch {}
+  }
+  if (Notification.permission === "granted") {
+    try {
+      const a = fresh[0];
+      const title = fresh.length === 1
+        ? `🔥 ${a.title.slice(0, 40)}`
+        : `🔥 ${fresh.length} nouveaux deals`;
+      const body = fresh.length === 1
+        ? `${Math.round(a.price)}€ · ${a.watchlist || ""}`
+        : fresh.slice(0, 3).map(x => `${x.title.slice(0, 30)} (${Math.round(x.price)}€)`).join("\n");
+      new Notification(title, { body, icon: "icon.png", tag: "dealsbot", renotify: true });
+    } catch {}
+  }
 }
 
 // ===== Écran de setup 1er lancement =====
@@ -448,6 +508,8 @@ async function loadDiscover({ silent = false } = {}) {
       // Notifie sans repeindre tout: bouton flottant "↑ X nouvelles"
       showNewToast(fresh.length);
       pingTitle(fresh.length);
+      // Notification native + son si dispo
+      notifyNewDeals(fresh);
     } else {
       renderDiscover(true);
     }
