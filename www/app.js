@@ -382,7 +382,7 @@ function filterAndSort() {
     case "price-asc": list.sort((a, b) => a.price - b.price); break;
     case "price-desc": list.sort((a, b) => b.price - a.price); break;
     case "deal": list.sort((a, b) => (b.below_market_pct || 0) - (a.below_market_pct || 0)); break;
-    default: list.sort((a, b) => b.ts - a.ts); break;
+    default: list.sort((a, b) => (b.posted_at || b.ts) - (a.posted_at || a.ts)); break;
   }
   return list;
 }
@@ -413,7 +413,7 @@ function renderDiscover(animateNew = false) {
       ? `<img src="${escapeHtml(a.image)}" alt="" onerror="this.parentElement.innerHTML='<div class=noimg>📦</div>'">`
       : `<div class="noimg">📦</div>`;
 
-    const isRecent = (now - a.ts) <= 300;
+    const isRecent = (now - (a.posted_at || a.ts)) <= 300;
     const newBadge = isRecent ? '<span class="discover-new-badge">⚡ NEW</span>' : "";
 
     let dealTag = "";
@@ -446,7 +446,7 @@ function renderDiscover(animateNew = false) {
           <span class="discover-price">${Number(a.price).toFixed(0)}€</span>
           ${marketPrice}
         </div>
-        <div class="discover-meta">${escapeHtml(a.watchlist || "")} · il y a ${timeAgo(a.ts)}${a.location ? " · 📍" + escapeHtml(a.location) : ""}</div>
+        <div class="discover-meta">${escapeHtml(a.watchlist || "")} · il y a ${timeAgo(a.posted_at || a.ts)}${a.location ? " · 📍" + escapeHtml(a.location) : ""}</div>
       </div>
     `;
     // Click sur la card = ouvre l'annonce direct
