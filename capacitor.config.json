@@ -1,0 +1,26 @@
+{
+  "appId": "com.dealsbot.app",
+  "appName": "Deals Bot",
+  "webDir": "www",
+  "server": {
+    "iosScheme": "dealsbot"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0a0c10",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0a0c10"
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

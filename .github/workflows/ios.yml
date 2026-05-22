@@ -1,0 +1,69 @@
+name: Build iOS .ipa
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build unsigned .ipa
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install npm deps
+        run: npm install
+
+      - name: Capacitor sync iOS
+        run: npx cap sync ios
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/App/Pods
+          key: pods-${{ hashFiles('ios/App/Podfile.lock') }}
+          restore-keys: pods-
+
+      - name: Install pods
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      - name: Build archive (unsigned)
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath $PWD/build/App.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Package .ipa from archive
+        working-directory: ios/App
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app build/ipa/Payload/
+          cd build/ipa
+          zip -qry ../DealsBot.ipa Payload
+          cd ..
+          ls -lh DealsBot.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: DealsBot-unsigned-ipa
+          path: ios/App/build/DealsBot.ipa
+          retention-days: 30
