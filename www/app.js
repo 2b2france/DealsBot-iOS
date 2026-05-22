@@ -354,7 +354,7 @@ document.getElementById("sort-select").addEventListener("change", (e) => {
 function filterAndSort() {
   const now = Math.floor(Date.now() / 1000);
   const today0 = now - 86400;
-  const five = now - 300;
+  const recent = now - 60; // 60s = vraiment frais
 
   let list = cachedDiscover.filter(a => {
     if (priceFilter.min > 0 && a.price < priceFilter.min) return false;
@@ -362,7 +362,7 @@ function filterAndSort() {
     if (watchlistFilter && a.watchlist !== watchlistFilter) return false;
     switch (activeDiscoverFilter) {
       case "today": return a.ts >= today0;
-      case "new5": return a.ts >= five;
+      case "new5": return (a.posted_at || a.ts) >= recent;
       case "deal": return a.below_market_pct >= 10;
       case "vinted": return a.platform === "vinted";
       case "leboncoin": return a.platform === "leboncoin";
@@ -974,13 +974,13 @@ document.addEventListener("touchend", () => { ptrStart = 0; });
 // ============== INIT + LIVE LOOP ==============
 
 loadDiscover();
-setInterval(refreshHealth, 20000);
+setInterval(refreshHealth, 15000);
 
-// Refresh silencieux toutes les 25s quand on est sur Plans
+// Refresh silencieux toutes les 10s quand on est sur Plans (aligné sur le poll bot)
 setInterval(() => {
   const onPlans = document.querySelector('.tab[data-tab="discover"]').classList.contains("active");
   if (onPlans) loadDiscover({ silent: true });
-}, 25000);
+}, 10000);
 
 // Reset le titre / toast quand on revient sur la page
 window.addEventListener("focus", resetTitle);
